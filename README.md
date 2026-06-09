@@ -38,3 +38,5 @@ An interactive, responsive, and feature-rich web application designed to manage 
 ```text
 ├── biblioteka-final_1.html   # Main application containing structure, styling, and logic
 └── README.md                 # Project documentation
+
+<img width="1469" height="802" alt="image" src="https://github.com/user-attachments/assets/7583e024-2211-4200-85e8-9a0dd5d2a92e" />
