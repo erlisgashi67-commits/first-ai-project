@@ -31,6 +31,9 @@ An interactive, responsive, and feature-rich web application designed to manage 
 * **Libraries:** [Chart.js](https://www.chartjs.org/) (via CDN) for data visualization
 * **Icons:** [Font Awesome](https://fontawesome.com/) for interface iconography
 
+<img width="1469" height="802" alt="image" src="https://github.com/user-attachments/assets/27a181ff-5e9a-482f-8d7b-3d20a50e40de" />
+
+
 ---
 
 ## 📂 Project Structure
@@ -39,4 +42,3 @@ An interactive, responsive, and feature-rich web application designed to manage 
 ├── biblioteka-final_1.html   # Main application containing structure, styling, and logic
 └── README.md                 # Project documentation
 
-<img width="1469" height="802" alt="image" src="https://github.com/user-attachments/assets/7583e024-2211-4200-85e8-9a0dd5d2a92e" />
