@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#060910">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Biblioteka">
+  <title>Biblioteka Qendrore</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=Lora:ital,wght@1,400;1,500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#060910;--surface:#0b1120;--card:#101828;--card-h:#162035;--input:#0c1424;
+      --gold:#c4a03c;--gold-l:#debb50;--gold-d:rgba(196,160,60,.18);--gold-g:rgba(196,160,60,.10);
+      --ivory:#f0e6cc;--dim:#7a6e5c;--muted:#38312a;
+      --bdr:rgba(196,160,60,.14);--bdr-a:rgba(196,160,60,.48);
+      --err:#b94545;--ok:#3a8a58;--r:8px;
+    }
+    html{scroll-behavior:smooth;-webkit-tap-highlight-color:transparent}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ivory);min-height:100vh;overflow-x:hidden}
+    .hidden{display:none!important}
+    button{cursor:pointer;border:none;font-family:inherit;outline:none;-webkit-tap-highlight-color:transparent}
+    input,textarea,select{font-family:inherit;outline:none}
+    .btn-primary{background:var(--gold);color:#05080d;font-weight:600;font-size:14px;padding:11px 22px;border-radius:var(--r);transition:background .18s,transform .15s;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px}
+    .btn-primary:hover:not(:disabled){background:var(--gold-l);transform:translateY(-1px)}
+    .btn-primary:disabled{opacity:.5;cursor:not-allowed}
+    .btn-ghost{background:transparent;color:var(--ivory);font-weight:500;font-size:14px;padding:11px 22px;border-radius:var(--r);border:1px solid var(--bdr);transition:border-color .18s,color .18s;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px}
+    .btn-ghost:hover:not(:disabled){border-color:var(--bdr-a);color:var(--gold)}
+    .btn-ghost:disabled{opacity:.45;cursor:not-allowed}
+    .btn-sm{font-size:12px!important;padding:7px 14px!important;min-height:36px!important}
+    .btn-del{background:rgba(185,69,69,.15);border:1px solid rgba(185,69,69,.3);color:#df7878;font-size:12px;padding:7px 10px;border-radius:var(--r);transition:all .18s;min-height:36px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;justify-content:center}
+    .btn-del:hover{background:rgba(185,69,69,.3)}
+    .inp{width:100%;background:var(--input);border:1px solid var(--bdr);border-radius:var(--r);padding:12px 14px;color:var(--ivory);font-size:15px;transition:border-color .18s;min-height:48px}
+    .inp:focus{border-color:var(--bdr-a)}
+    .inp::placeholder{color:var(--muted)}
+    .inp:disabled{opacity:.45;cursor:not-allowed}
+    textarea.inp{min-height:88px;resize:vertical}
+    .lbl{font-size:11px;color:var(--dim);font-weight:600;margin-bottom:6px;display:block;letter-spacing:.5px;text-transform:uppercase}
+    .fgrp{display:flex;flex-direction:column}
+    .alert-err{background:rgba(185,69,69,.12);border:1px solid rgba(185,69,69,.28);color:#df7878;padding:10px 14px;border-radius:var(--r);font-size:13px;line-height:1.45}
+    .alert-ok{background:rgba(58,138,88,.12);border:1px solid rgba(58,138,88,.28);color:#6ecf92;padding:10px 14px;border-radius:var(--r);font-size:13px}
+    .spinner{width:16px;height:16px;border:2px solid rgba(5,8,13,.25);border-top-color:#05080d;border-radius:50%;animation:spin .65s linear infinite;display:inline-block;flex-shrink:0}
+    .spin-g{border-color:rgba(196,160,60,.25);border-top-color:var(--gold)}
+    .spin-lg{width:36px;height:36px;border-width:3px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    @keyframes breathe{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.6}50%{transform:translate(-50%,-50%) scale(1.12);opacity:1}}
+    @keyframes slide-up{from{transform:translateY(100%);opacity:0}to{transform:none;opacity:1}}
+    .load-box{display:flex;justify-content:center;align-items:center;padding:60px}
+    .badge{font-size:10px;padding:3px 8px;border-radius:100px;background:var(--gold-g);color:var(--gold);border:1px solid rgba(196,160,60,.22);font-weight:600;letter-spacing:.3px;white-space:nowrap}
+    .divider{height:1px;background:var(--bdr);margin:20px 0}
+    /* LANDING */
+    .lnav{position:fixed;top:0;left:0;right:0;z-index:100;padding:16px 48px;display:flex;justify-content:space-between;align-items:center;background:linear-gradient(to bottom,rgba(6,9,16,.97) 0%,transparent 100%);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+    .logo{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--gold)}
+    .logo sub{font-style:italic;font-weight:400;font-size:11px;color:var(--dim);margin-left:4px;font-family:'Lora',serif;vertical-align:middle}
+    .lnav-btns{display:flex;gap:10px;align-items:center}
+    .hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:100px 24px 80px;position:relative;overflow:hidden}
+    .hero-bg{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 65% 50% at 50% 42%,rgba(196,160,60,.08) 0%,transparent 60%),radial-gradient(ellipse 35% 35% at 18% 82%,rgba(58,143,124,.05) 0%,transparent 55%),radial-gradient(ellipse 40% 35% at 82% 18%,rgba(123,79,138,.045) 0%,transparent 55%)}
+    .hero-orb{position:absolute;width:520px;height:520px;background:radial-gradient(circle,rgba(196,160,60,.06) 0%,transparent 68%);top:50%;left:50%;transform:translate(-50%,-50%);animation:breathe 7s ease-in-out infinite;pointer-events:none}
+    .hero-inner{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center}
+    .hero-chip{display:inline-flex;align-items:center;gap:8px;background:var(--gold-g);border:1px solid var(--bdr);padding:6px 16px;border-radius:100px;font-size:12px;color:var(--gold);margin-bottom:28px;font-weight:600;letter-spacing:.4px}
+    .hero h1{font-family:'Playfair Display',serif;font-size:clamp(36px,7vw,78px);font-weight:700;line-height:1.1;margin-bottom:20px;max-width:800px}
+    .hero h1 em{font-style:italic;color:var(--gold)}
+    .hero-sub{font-family:'Lora',serif;font-style:italic;font-size:clamp(15px,2vw,18px);color:var(--dim);max-width:440px;line-height:1.7;margin-bottom:40px}
+    .hero-ctas{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center}
+    .sec{padding:80px 48px;max-width:1120px;margin:0 auto}
+    .sec-hd{text-align:center;margin-bottom:52px}
+    .sec-hd h2{font-family:'Playfair Display',serif;font-size:clamp(28px,4vw,40px);font-weight:600;margin-bottom:10px}
+    .sec-hd p{color:var(--dim);font-size:15px}
+    .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+    .feat-card{background:var(--card);border:1px solid var(--bdr);border-radius:16px;padding:32px 24px;transition:transform .2s,border-color .2s}
+    .feat-card:hover{transform:translateY(-4px);border-color:var(--bdr-a)}
+    .feat-icon{font-size:32px;margin-bottom:14px;display:block}
+    .feat-card h3{font-family:'Playfair Display',serif;font-size:20px;font-weight:600;margin-bottom:8px}
+    .feat-card p{color:var(--dim);font-size:14px;line-height:1.7}
+    .books-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+    .book-card{background:var(--card);border:1px solid var(--bdr);border-radius:12px;overflow:hidden;transition:transform .18s,border-color .18s,box-shadow .18s}
+    .book-card:hover{transform:translateY(-3px);border-color:var(--bdr-a);box-shadow:0 14px 40px rgba(0,0,0,.45)}
+    .bcover{height:120px;position:relative;display:flex;align-items:center;justify-content:center;padding:16px 18px 16px 24px}
+    .bspine{position:absolute;left:0;top:0;bottom:0;width:5px;border-radius:2px 0 0 0}
+    .bcover-title{font-family:'Playfair Display',serif;font-size:12px;font-weight:600;text-align:center;color:rgba(255,255,255,.92);line-height:1.35;position:relative;z-index:1}
+    .bbody{padding:12px 14px 14px}
+    .btitle{font-family:'Playfair Display',serif;font-size:13px;font-weight:600;margin-bottom:3px;line-height:1.3}
+    .bauthor{font-family:'Lora',serif;font-style:italic;font-size:12px;color:var(--dim);margin-bottom:9px}
+    .brow{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    .avail{font-size:11px;color:var(--dim)}
+    .avail.none{color:#b97070}
+    .lfoot{padding:36px 48px;border-top:1px solid var(--bdr);text-align:center;color:var(--muted);font-size:13px}
+    /* AUTH MODAL */
+    #auth-modal{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;animation:fadeIn .18s ease}
+    .modal-overlay{position:absolute;inset:0;background:rgba(6,9,16,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+    .modal-box{position:relative;z-index:1;background:var(--card);border:1px solid var(--bdr);border-radius:20px;padding:36px 32px;width:420px;max-width:calc(100vw - 32px);animation:fadeUp .22s ease;max-height:90vh;overflow-y:auto}
+    .modal-x{position:absolute;top:14px;right:14px;width:30px;height:30px;background:rgba(255,255,255,.04);border:1px solid var(--bdr);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:14px;transition:all .15s}
+    .modal-x:hover{color:var(--ivory);border-color:var(--bdr-a)}
+    .modal-logo{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--gold);text-align:center;margin-bottom:3px}
+    .modal-tagline{text-align:center;font-size:13px;color:var(--dim);font-family:'Lora',serif;font-style:italic;margin-bottom:24px}
+    .tab-row{display:flex;background:rgba(0,0,0,.35);border-radius:var(--r);padding:3px;margin-bottom:22px;gap:3px}
+    .tab-pill{flex:1;padding:9px;border-radius:6px;font-size:13px;font-weight:500;transition:all .18s;color:var(--dim);background:transparent}
+    .tab-pill.on{background:var(--gold);color:#05080d;font-weight:600}
+    .aform{display:flex;flex-direction:column;gap:14px}
+    .form-link{text-align:center;font-size:12px;color:var(--dim);margin-top:14px}
+    .form-link a{color:var(--gold);text-decoration:none}
+    /* DASHBOARD */
+    #dashboard{min-height:100vh;background:var(--bg)}
+    .dash-nav{background:var(--surface);border-bottom:1px solid var(--bdr);height:60px;display:flex;align-items:center;padding:0 32px;position:sticky;top:0;z-index:100}
+    .dash-logo{font-family:'Playfair Display',serif;font-weight:700;color:var(--gold);font-size:18px;margin-right:32px;white-space:nowrap}
+    .dash-tabs{display:flex;height:100%;flex:1;overflow-x:auto}
+    .dtab{height:100%;padding:0 16px;display:flex;align-items:center;font-size:13px;font-weight:500;color:var(--dim);border-bottom:2px solid transparent;transition:color .18s,border-color .18s;white-space:nowrap;gap:6px}
+    .dtab:hover{color:var(--ivory)}
+    .dtab.on{color:var(--gold);border-bottom-color:var(--gold)}
+    .dtab-admin{color:rgba(185,69,69,.8)}
+    .dtab-admin.on{color:#df7878;border-bottom-color:#df7878}
+    .dtab-admin:hover{color:#df7878}
+    .dash-user{display:flex;align-items:center;gap:10px;margin-left:auto;padding-left:14px}
+    .uavatar{width:32px;height:32px;border-radius:50%;background:var(--gold-d);border:1px solid var(--bdr-a);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--gold);font-family:'Playfair Display',serif;flex-shrink:0}
+    .uname{font-size:13px;font-weight:500;color:var(--ivory);white-space:nowrap}
+    .dash-body{max-width:1100px;margin:0 auto;padding:32px}
+    .dtab-panel{display:none}
+    .dtab-panel.on{display:block;animation:fadeUp .2s ease}
+    .panel-hd{margin-bottom:24px}
+    .panel-hd h2{font-family:'Playfair Display',serif;font-size:26px;font-weight:600;margin-bottom:4px}
+    .panel-hd p{color:var(--dim);font-size:14px}
+    .search-wrap{position:relative;max-width:300px;margin-bottom:22px}
+    .search-wrap .inp{padding-left:36px}
+    .search-ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px}
+    /* BORROWINGS */
+    .blist{display:flex;flex-direction:column;gap:11px}
+    .bcard{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:15px 18px;display:flex;align-items:center;gap:14px;transition:border-color .18s}
+    .bcard:hover{border-color:var(--bdr-a)}
+    .bspine-bar{width:4px;height:48px;border-radius:4px;flex-shrink:0}
+    .binfo{flex:1;min-width:0}
+    .btitle2{font-family:'Playfair Display',serif;font-size:15px;font-weight:600;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .bauth2{font-size:12px;color:var(--dim);margin-bottom:5px;font-family:'Lora',serif;font-style:italic}
+    .bdates{font-size:11px;color:var(--dim)}
+    .sbadge{font-size:11px;padding:3px 9px;border-radius:100px;font-weight:600;flex-shrink:0}
+    .s-act{background:rgba(58,138,88,.14);color:#6ecf92;border:1px solid rgba(58,138,88,.3)}
+    .s-ret{background:rgba(100,100,100,.08);color:var(--dim);border:1px solid var(--bdr)}
+    .s-ov{background:rgba(185,69,69,.14);color:#df7878;border:1px solid rgba(185,69,69,.3)}
+    .sec-lbl{font-family:'Playfair Display',serif;font-size:14px;font-weight:600;margin-bottom:10px;margin-top:22px}
+    .sec-lbl:first-child{margin-top:0}
+    .sl-g{color:var(--gold)}
+    .sl-d{color:var(--dim)}
+    /* PROFILE */
+    .pcard{background:var(--card);border:1px solid var(--bdr);border-radius:16px;padding:32px;max-width:500px}
+    .pav-lg{width:64px;height:64px;border-radius:50%;background:var(--gold-d);border:2px solid var(--bdr-a);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:var(--gold);font-family:'Playfair Display',serif;margin-bottom:16px}
+    .pstats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+    .pstat{background:var(--input);border:1px solid var(--bdr);border-radius:10px;padding:14px;text-align:center}
+    .pstat-n{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--gold)}
+    .pstat-l{font-size:11px;color:var(--dim);margin-top:3px}
+    .pform{display:flex;flex-direction:column;gap:13px}
+    /* ADMIN */
+    .admin-subnav{display:flex;gap:3px;background:rgba(0,0,0,.35);border-radius:var(--r);padding:3px;margin-bottom:24px;overflow-x:auto}
+    .admin-tab{flex:1;padding:9px 14px;border-radius:6px;font-size:12px;font-weight:500;color:var(--dim);background:transparent;transition:all .18s;white-space:nowrap;min-width:max-content}
+    .admin-tab:hover:not(.on){color:var(--ivory)}
+    .admin-tab.on{background:rgba(196,160,60,.12);color:var(--gold);font-weight:600}
+    .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:8px}
+    .stat-card{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:20px;transition:border-color .18s}
+    .stat-card:hover{border-color:var(--bdr-a)}
+    .stat-icon{font-size:22px;margin-bottom:10px;display:block}
+    .stat-val{font-family:'Playfair Display',serif;font-size:32px;font-weight:700;color:var(--gold);line-height:1}
+    .stat-lbl{font-size:11px;color:var(--dim);font-weight:500;margin-top:5px;letter-spacing:.3px;text-transform:uppercase}
+    .stat-card.danger{border-color:rgba(185,69,69,.25)}
+    .stat-card.danger .stat-val{color:#df7878}
+    .atoolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px;flex-wrap:wrap}
+    .atoolbar h3{font-family:'Playfair Display',serif;font-size:18px;font-weight:600}
+    .atable-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--bdr)}
+    .atable{width:100%;border-collapse:collapse;font-size:13px}
+    .atable thead tr{background:rgba(196,160,60,.06)}
+    .atable th{padding:12px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--dim);letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid var(--bdr);white-space:nowrap}
+    .atable td{padding:11px 14px;border-bottom:1px solid rgba(196,160,60,.07);vertical-align:middle}
+    .atable tr:last-child td{border-bottom:none}
+    .atable tbody tr:hover{background:rgba(255,255,255,.025)}
+    .atitle{font-weight:500;color:var(--ivory);font-size:13px;line-height:1.3}
+    .asub{font-size:11px;color:var(--dim);margin-top:2px}
+    .asub.ov{color:#df7878}
+    .at-ok{color:#6ecf92;font-weight:700}
+    .at-err{color:#df7878;font-weight:700}
+    .act-btns{display:flex;gap:6px;align-items:center}
+    .role-admin{background:rgba(196,160,60,.15);color:var(--gold);border:1px solid rgba(196,160,60,.3);padding:3px 8px;border-radius:100px;font-size:10px;font-weight:700;letter-spacing:.3px}
+    .role-user{background:rgba(100,100,100,.1);color:var(--dim);border:1px solid var(--bdr);padding:3px 8px;border-radius:100px;font-size:10px;font-weight:600}
+    .admin-filter-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+    .filter-btn{padding:5px 12px;border-radius:100px;font-size:11px;font-weight:600;background:transparent;border:1px solid var(--bdr);color:var(--dim);transition:all .15s;cursor:pointer;font-family:inherit}
+    .filter-btn.on{background:var(--gold-g);border-color:var(--bdr-a);color:var(--gold)}
+    /* EMPTY */
+    .empty-state{text-align:center;padding:52px 20px;color:var(--dim)}
+    .empty-state .ei{font-size:42px;display:block;margin-bottom:12px}
+    .empty-state p{font-size:14px;line-height:1.6}
+    /* MOBILE NAV */
+    .mobile-nav{position:fixed;bottom:0;left:0;right:0;height:62px;z-index:200;background:rgba(11,17,32,.96);border-top:1px solid var(--bdr);display:none;align-items:center;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+    .mnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:100%;padding:6px 0;color:var(--dim);background:transparent;transition:color .18s}
+    .mnav-icon{font-size:20px;line-height:1}
+    .mnav-lbl{font-size:9px;font-weight:600;letter-spacing:.3px}
+    .mnav-btn.on{color:var(--gold)}
+    .mnav-btn.admin-mb.on{color:#df7878}
+    /* RESPONSIVE */
+    @media(max-width:960px){.lnav{padding:14px 20px}.sec{padding:60px 20px}.feat-grid{grid-template-columns:1fr;gap:14px}.books-grid{grid-template-columns:repeat(2,1fr)}.dash-body{padding:22px 20px}.dash-nav{padding:0 20px}.pcard{padding:22px}.stats-grid{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:640px){.hero{padding:90px 20px 60px}.hero-ctas{flex-direction:column;width:100%}.hero-ctas button{width:100%;max-width:320px}.lfoot{padding:28px 20px}#auth-modal{align-items:flex-end}.modal-box{width:100%;max-width:100%;border-radius:20px 20px 0 0;border-left:none;border-right:none;border-bottom:none;animation:slide-up .28s cubic-bezier(.16,1,.3,1);max-height:92vh;padding:28px 20px 32px}.dash-nav{display:none}.mobile-nav{display:flex}.dash-body{padding:18px 16px 80px}.books-grid{grid-template-columns:repeat(2,1fr);gap:11px}.uname{display:none}.stats-grid{grid-template-columns:repeat(2,1fr);gap:10px}.stat-val{font-size:26px}}
+    @media(max-width:380px){.books-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+
+<!-- NETWORK WARNING BANNER -->
+<div id="net-banner" class="hidden" style="position:fixed;top:0;left:0;right:0;z-index:9999;background:#b94545;color:#fff;padding:10px 20px;text-align:center;font-size:13px;font-weight:500;line-height:1.5">
+  ⚠️ <strong>Faqja nuk mund të lidhet me serverin.</strong>
+  Nëse po sheh preview-n brenda Claude — kjo është normale.
+  <strong>Deploy-o te Vercel</strong> (drag-and-drop) dhe do funksionojë plotësisht. &nbsp;
+  <button onclick="document.getElementById('net-banner').classList.add('hidden')" style="background:rgba(255,255,255,.25);border:none;color:#fff;padding:3px 10px;border-radius:4px;cursor:pointer;font-size:12px">✕</button>
+</div>
+
+<!-- LANDING -->
+<div id="landing">
+  <nav class="lnav">
+    <div class="logo">📚 Biblioteka<sub>Qendrore</sub></div>
+    <div class="lnav-btns">
+      <button class="btn-ghost btn-sm" onclick="openAuth('in')">Hyr</button>
+      <button class="btn-primary btn-sm" onclick="openAuth('up')">Regjistrohu</button>
+    </div>
+  </nav>
+  <section class="hero">
+    <div class="hero-bg"></div><div class="hero-orb"></div>
+    <div class="hero-inner">
+      <div class="hero-chip">📖 Koleksioni Digjital i Librave</div>
+      <h1>Çdo Libër,<br>Një <em>Botë e Re</em></h1>
+      <p class="hero-sub">Shfleto qindra libra shqiptarë dhe ndërkombëtarë, huazo me një klik — krejt falas.</p>
+      <div class="hero-ctas">
+        <button class="btn-primary" style="padding:14px 32px;font-size:15px" onclick="openAuth('up')">Regjistrohu Falas</button>
+        <button class="btn-ghost"   style="padding:14px 32px;font-size:15px" onclick="openAuth('in')">Hyr në Llogari</button>
+      </div>
+    </div>
+  </section>
+  <div class="sec">
+    <div class="sec-hd"><h2>Pse Biblioteka Jonë?</h2><p>E thjeshtë, e shpejtë, e pasur me tituj shqiptarë dhe ndërkombëtarë.</p></div>
+    <div class="feat-grid">
+      <div class="feat-card"><span class="feat-icon">📖</span><h3>Shfleto Librat</h3><p>Koleksion i organizuar sipas zhanrit dhe autorit, me kërkim të menjëhershëm.</p></div>
+      <div class="feat-card"><span class="feat-icon">🔖</span><h3>Gjurmo Huazimet</h3><p>Kontrollo çdo kohë cilët libra ke të huazuar, datat e kthimit dhe historikun.</p></div>
+      <div class="feat-card"><span class="feat-icon">🔐</span><h3>Llogaria Jote</h3><p>Të dhënat e ruajtura me siguri. Autentifikim i plotë me Supabase Auth.</p></div>
+    </div>
+  </div>
+  <div class="sec" style="padding-top:0">
+    <div class="sec-hd"><h2>Libra të Popullarizuar</h2><p>Titujt më të kërkuar nga koleksioni ynë.</p></div>
+    <div id="preview-grid" class="books-grid"><div class="load-box"><div class="spinner spin-g spin-lg"></div></div></div>
+    <div style="text-align:center;margin-top:28px"><button class="btn-primary" onclick="openAuth('up')">Shiko Të Gjithë Librat →</button></div>
+  </div>
+  <footer class="lfoot">© 2026 Biblioteka Qendrore &nbsp;·&nbsp; Ndërtuar me ❤️ për lexuesit shqiptarë</footer>
+</div>
+
+<!-- AUTH MODAL -->
+<div id="auth-modal" class="hidden">
+  <div class="modal-overlay" onclick="closeAuth()"></div>
+  <div class="modal-box">
+    <button class="modal-x" onclick="closeAuth()">✕</button>
+    <div class="modal-logo">📚 Biblioteka</div>
+    <p class="modal-tagline">Këndi i librave shqiptarë</p>
+    <div class="tab-row">
+      <button class="tab-pill on" id="tp-in" onclick="switchTab('in')">Hyr</button>
+      <button class="tab-pill"    id="tp-up" onclick="switchTab('up')">Regjistrohu</button>
+    </div>
+    <div id="auth-err" class="alert-err hidden" style="margin-bottom:14px"></div>
+    <div id="auth-ok"  class="alert-ok  hidden" style="margin-bottom:14px"></div>
+    <div id="form-in">
+      <div class="aform">
+        <div class="fgrp"><label class="lbl">Email</label><input class="inp" id="si-em" type="email" placeholder="ema@shembull.com" autocomplete="email"></div>
+        <div class="fgrp"><label class="lbl">Fjalëkalimi</label><input class="inp" id="si-pw" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+        <button class="btn-primary" id="btn-in" onclick="handleSignIn()" style="width:100%;margin-top:4px">Hyr</button>
+      </div>
+      <p class="form-link">Nuk ke llogari? <a href="#" onclick="switchTab('up');return false">Regjistrohu falas</a></p>
+    </div>
+    <div id="form-up" class="hidden">
+      <div class="aform">
+        <div class="fgrp"><label class="lbl">Emri i Plotë</label><input class="inp" id="su-nm" type="text" placeholder="Arta Berisha" autocomplete="name"></div>
+        <div class="fgrp"><label class="lbl">Email</label><input class="inp" id="su-em" type="email" placeholder="ema@shembull.com" autocomplete="email"></div>
+        <div class="fgrp"><label class="lbl">Fjalëkalimi</label><input class="inp" id="su-pw" type="password" placeholder="••••••••" autocomplete="new-password"></div>
+        <div class="fgrp"><label class="lbl">Konfirmo</label><input class="inp" id="su-pw2" type="password" placeholder="••••••••" autocomplete="new-password"></div>
+        <button class="btn-primary" id="btn-up" onclick="handleSignUp()" style="width:100%;margin-top:4px">Krijo Llogari</button>
+      </div>
+      <p class="form-link">Ke llogari? <a href="#" onclick="switchTab('in');return false">Hyr</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="hidden">
+  <nav class="dash-nav">
+    <div class="dash-logo">📚 Biblioteka</div>
+    <div class="dash-tabs">
+      <button class="dtab on"  id="dt-books"      onclick="switchDash('books')">📖 Librat</button>
+      <button class="dtab"     id="dt-borrowings"  onclick="switchDash('borrowings')">🔖 Huazimet</button>
+      <button class="dtab"     id="dt-profile"     onclick="switchDash('profile')">👤 Profili</button>
+      <button class="dtab dtab-admin admin-only hidden" id="dt-admin" onclick="switchDash('admin')">⚙️ Admin</button>
+    </div>
+    <div class="dash-user">
+      <div class="uavatar" id="uavatar">?</div>
+      <span class="uname" id="uname"></span>
+      <button class="btn-ghost btn-sm" onclick="handleSignOut()">Dil</button>
+    </div>
+  </nav>
+  <div class="dash-body">
+    <!-- BOOKS -->
+    <div class="dtab-panel on" id="panel-books">
+      <div class="panel-hd"><h2>Koleksioni i Librave</h2><p>Shfleto dhe huazo libra nga biblioteka jonë.</p></div>
+      <div class="search-wrap"><span class="search-ico">🔍</span><input class="inp" id="bsearch" type="text" placeholder="Kërko titull, autor, zhanër..." oninput="filterBooks()"></div>
+      <div id="books-grid" class="books-grid"><div class="load-box"><div class="spinner spin-g spin-lg"></div></div></div>
+    </div>
+    <!-- BORROWINGS -->
+    <div class="dtab-panel" id="panel-borrowings">
+      <div class="panel-hd"><h2>Huazimet Mia</h2><p>Librat e huazuar dhe historiku i kthimeve.</p></div>
+      <div id="blist-wrap"><div class="load-box"><div class="spinner spin-g spin-lg"></div></div></div>
+    </div>
+    <!-- PROFILE -->
+    <div class="dtab-panel" id="panel-profile">
+      <div class="panel-hd"><h2>Profili Im</h2><p>Menaxho informacionin e llogarisë sate.</p></div>
+      <div class="pcard">
+        <div class="pav-lg" id="pav-lg">?</div>
+        <div class="pstats">
+          <div class="pstat"><div class="pstat-n" id="ps-act">0</div><div class="pstat-l">Libra Aktive</div></div>
+          <div class="pstat"><div class="pstat-n" id="ps-tot">0</div><div class="pstat-l">Gjithsej Huazime</div></div>
+        </div>
+        <div class="divider"></div>
+        <div id="perr" class="alert-err hidden" style="margin-bottom:14px"></div>
+        <div id="pok"  class="alert-ok  hidden" style="margin-bottom:14px"></div>
+        <div class="pform">
+          <div class="fgrp"><label class="lbl">Emri i Plotë</label><input class="inp" id="p-name" type="text"></div>
+          <div class="fgrp"><label class="lbl">Email</label><input class="inp" id="p-email" type="email" disabled></div>
+          <div class="fgrp"><label class="lbl">Anëtar Që Nga</label><input class="inp" id="p-since" type="text" disabled></div>
+          <button class="btn-primary" id="psave" onclick="handleProfileSave()" style="align-self:flex-start">Ruaj Ndryshimet</button>
+        </div>
+      </div>
+    </div>
+    <!-- ADMIN PANEL -->
+    <div class="dtab-panel" id="panel-admin">
+      <div class="panel-hd">
+        <h2>⚙️ Admin Panel</h2>
+        <p>Menaxho librat, userët dhe huazimet e të gjithë bibliotekës.</p>
+      </div>
+      <div class="admin-subnav">
+        <button class="admin-tab on" id="atp-aoverview"    onclick="switchAdminTab('aoverview')">📊 Overview</button>
+        <button class="admin-tab"    id="atp-abooks"       onclick="switchAdminTab('abooks')">📚 Librat</button>
+        <button class="admin-tab"    id="atp-ausers"       onclick="switchAdminTab('ausers')">👥 Userët</button>
+        <button class="admin-tab"    id="atp-aborrows"     onclick="switchAdminTab('aborrows')">🔖 Të Gjitha Huazimet</button>
+      </div>
+      <!-- Overview -->
+      <div id="apanel-aoverview">
+        <div id="admin-stats-wrap">
+          <div class="stats-grid">
+            <div class="stat-card"><span class="stat-icon">📚</span><div class="stat-val" id="as-books">—</div><div class="stat-lbl">Gjithsej Libra</div></div>
+            <div class="stat-card"><span class="stat-icon">✅</span><div class="stat-val" id="as-avail">—</div><div class="stat-lbl">Kopje Disponueshme</div></div>
+            <div class="stat-card"><span class="stat-icon">👥</span><div class="stat-val" id="as-users">—</div><div class="stat-lbl">Anëtarë</div></div>
+            <div class="stat-card"><span class="stat-icon">🔖</span><div class="stat-val" id="as-active">—</div><div class="stat-lbl">Huazime Aktive</div></div>
+            <div class="stat-card danger"><span class="stat-icon">⚠️</span><div class="stat-val" id="as-overdue">—</div><div class="stat-lbl">Huazime Vonuara</div></div>
+            <div class="stat-card"><span class="stat-icon">📈</span><div class="stat-val" id="as-total">—</div><div class="stat-lbl">Gjithsej Huazime</div></div>
+          </div>
+        </div>
+      </div>
+      <!-- Admin Books -->
+      <div id="apanel-abooks" class="hidden">
+        <div class="atoolbar">
+          <h3>Menaxhimi i Librave</h3>
+          <button class="btn-primary btn-sm" onclick="openBookModal()">+ Shto Libër</button>
+        </div>
+        <div class="search-wrap" style="max-width:260px;margin-bottom:16px">
+          <span class="search-ico">🔍</span>
+          <input class="inp" id="ab-search" type="text" placeholder="Kërko..." oninput="filterAdminBooks()">
+        </div>
+        <div id="admin-books-wrap"><div class="load-box"><div class="spinner spin-g spin-lg"></div></div></div>
+      </div>
+      <!-- Admin Users -->
+      <div id="apanel-ausers" class="hidden">
+        <div class="atoolbar"><h3>Lista e Anëtarëve</h3><span id="users-count" style="font-size:13px;color:var(--dim)"></span></div>
+        <div id="admin-users-wrap"><div class="load-box"><div class="spinner spin-g spin-lg"></div></div></div>
+      </div>
+      <!-- Admin Borrowings -->
+      <div id="apanel-aborrows" class="hidden">
+        <div class="atoolbar"><h3>Të Gjitha Huazimet</h3></div>
+        <div class="admin-filter-row">
+          <span style="font-size:12px;color:var(--dim);font-weight:500">Filtro:</span>
+          <button class="filter-btn on" id="fbtn-all"     onclick="filterAdminBorrows('all')">Të Gjitha</button>
+          <button class="filter-btn"    id="fbtn-active"  onclick="filterAdminBorrows('active')">Aktive</button>
+          <button class="filter-btn"    id="fbtn-overdue" onclick="filterAdminBorrows('overdue')">Vonuara</button>
+          <button class="filter-btn"    id="fbtn-returned"onclick="filterAdminBorrows('returned')">Kthyer</button>
+        </div>
+        <div id="admin-borrows-wrap"><div class="load-box"><div class="spinner spin-g spin-lg"></div></div></div>
+      </div>
+    </div><!-- /admin panel -->
+  </div>
+</div>
+
+<!-- MOBILE NAV -->
+<nav id="mobile-nav" class="mobile-nav hidden">
+  <button class="mnav-btn on" id="mn-books"      onclick="switchDash('books')"><span class="mnav-icon">📖</span><span class="mnav-lbl">Librat</span></button>
+  <button class="mnav-btn"    id="mn-borrowings"  onclick="switchDash('borrowings')"><span class="mnav-icon">🔖</span><span class="mnav-lbl">Huazimet</span></button>
+  <button class="mnav-btn"    id="mn-profile"     onclick="switchDash('profile')"><span class="mnav-icon">👤</span><span class="mnav-lbl">Profili</span></button>
+  <button class="mnav-btn admin-mb admin-only hidden" id="mn-admin" onclick="switchDash('admin')"><span class="mnav-icon">⚙️</span><span class="mnav-lbl">Admin</span></button>
+  <button class="mnav-btn"                         onclick="handleSignOut()"><span class="mnav-icon">🚪</span><span class="mnav-lbl">Dil</span></button>
+</nav>
+
+<!-- BOOK MODAL (add / edit) -->
+<div id="book-modal" class="hidden">
+  <div class="modal-overlay" onclick="closeBookModal()"></div>
+  <div class="modal-box">
+    <button class="modal-x" onclick="closeBookModal()">✕</button>
+    <div class="modal-logo" id="bm-heading">Shto Libër</div>
+    <p class="modal-tagline" id="bm-sub">Plotëso të dhënat e librit të ri</p>
+    <div id="bmerr" class="alert-err hidden" style="margin-bottom:14px"></div>
+    <div class="aform">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="fgrp" style="grid-column:1/-1"><label class="lbl">Titulli *</label><input class="inp" id="bm-title" type="text" placeholder="Titulli i librit"></div>
+        <div class="fgrp" style="grid-column:1/-1"><label class="lbl">Autori *</label><input class="inp" id="bm-author" type="text" placeholder="Emri i autorit"></div>
+        <div class="fgrp"><label class="lbl">Zhanri *</label><input class="inp" id="bm-genre" type="text" placeholder="Roman, Poezi..."></div>
+        <div class="fgrp"><label class="lbl">Viti</label><input class="inp" id="bm-year" type="number" placeholder="2024" min="1000" max="2030"></div>
+        <div class="fgrp"><label class="lbl">Kopje Totale</label><input class="inp" id="bm-copies" type="number" placeholder="1" min="1" value="1"></div>
+        <div class="fgrp" style="grid-column:1/-1"><label class="lbl">Përshkrimi</label><textarea class="inp" id="bm-desc" placeholder="Përshkrim i shkurtër..."></textarea></div>
+      </div>
+      <button class="btn-primary" id="bm-save" onclick="handleBookSave()" style="width:100%;margin-top:4px">Ruaj Librin</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SUPA_URL='https://thnkewblipzpdeemuayg.supabase.co'
+  const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRobmtld2JsaXB6cGRlZW11YXlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3MzE4ODAsImV4cCI6MjA4NzMwNzg4MH0.mgtZmQQIVmhHIgLJ32j4PO6XiZ9LwCLmnLb0NOleTrk'
+  let db=null,me=null,allBooks=[],myBorrows=[],isAdmin=false,adminBooks=[],allAdminBorrows=[],adminBooksMap={},editingBookId=null
+
+  const SPINES=['#c4a03c','#3a8f8b','#7b4f8a','#c05048','#4a7a4a','#3a5f90','#8f6a3a','#5a4a8a']
+  const spine=s=>SPINES[[...s].reduce((h,c)=>c.charCodeAt(0)+((h<<5)-h),0)>>>0%SPINES.length]
+  const PREVIEW=[{id:'p1',title:'Gjenerali i Ushtrisë së Vdekur',author:'Ismail Kadare',genre:'Roman'},{id:'p2',title:'Kronikë në Gur',author:'Ismail Kadare',genre:'Roman'},{id:'p3',title:'1984',author:'George Orwell',genre:'Distopi'},{id:'p4',title:'Drita dhe Errësira',author:'Migjeni',genre:'Poezi'}]
+  const esc=s=>{const d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+  const df=d=>new Date(d).toLocaleDateString('sq-AL',{day:'numeric',month:'short',year:'2-digit'})
+
+  /* VIEW */
+  function showView(v){
+    document.getElementById('landing').classList.toggle('hidden',v!=='landing')
+    document.getElementById('dashboard').classList.toggle('hidden',v!=='dashboard')
+    document.getElementById('mobile-nav').classList.toggle('hidden',v!=='dashboard')
+  }
+
+  /* AUTH MODAL */
+  function openAuth(m){document.getElementById('auth-modal').classList.remove('hidden');switchTab(m);clearAuthMsg()}
+  function closeAuth(){document.getElementById('auth-modal').classList.add('hidden');clearAuthMsg()}
+  function switchTab(t){const i=t==='in';['form-in','form-up'].forEach((f,x)=>document.getElementById(f).classList.toggle('hidden',i?x===1:x===0));document.getElementById('tp-in').classList.toggle('on',i);document.getElementById('tp-up').classList.toggle('on',!i);clearAuthMsg()}
+  function clearAuthMsg(){['auth-err','auth-ok'].forEach(x=>document.getElementById(x).classList.add('hidden'))}
+  function showAuthErr(m){const e=document.getElementById('auth-err');e.textContent=m;e.classList.remove('hidden');document.getElementById('auth-ok').classList.add('hidden')}
+  function showAuthOk(m){const e=document.getElementById('auth-ok');e.textContent=m;e.classList.remove('hidden');document.getElementById('auth-err').classList.add('hidden')}
+  function setBtnLoad(id,on,txt){const b=document.getElementById(id);b.disabled=on;b.innerHTML=on?'<span class="spinner"></span>':txt}
+
+  async function handleSignIn(){
+    const email=document.getElementById('si-em').value.trim(),pass=document.getElementById('si-pw').value
+    if(!email)return showAuthErr('Fut emailin.');if(!pass)return showAuthErr('Fut fjalëkalimin.')
+    setBtnLoad('btn-in',true,'Hyr');clearAuthMsg()
+    try{const{error}=await db.auth.signInWithPassword({email,password:pass});if(error)throw error;closeAuth()}
+    catch(e){showAuthErr(xlErr(e.message))}finally{setBtnLoad('btn-in',false,'Hyr')}
+  }
+
+  async function handleSignUp(){
+    const name=document.getElementById('su-nm').value.trim(),email=document.getElementById('su-em').value.trim(),pw=document.getElementById('su-pw').value,pw2=document.getElementById('su-pw2').value
+    if(!name)return showAuthErr('Fut emrin.');if(!email)return showAuthErr('Fut emailin.');if(pw.length<6)return showAuthErr('Fjalëkalimi min. 6 karaktere.');if(pw!==pw2)return showAuthErr('Fjalëkalimet nuk përputhen.')
+    setBtnLoad('btn-up',true,'Krijo Llogari');clearAuthMsg()
+    try{const{data,error}=await db.auth.signUp({email,password:pw,options:{data:{full_name:name},emailRedirectTo:window.location.origin}});if(error)throw error;if(data.session)closeAuth();else showAuthOk('✅ Llogaria u krijua! Konfirmo emailin tënd, pastaj hyr.')}
+    catch(e){showAuthErr(xlErr(e.message))}finally{setBtnLoad('btn-up',false,'Krijo Llogari')}
+  }
+
+  async function handleSignOut(){await db.auth.signOut();me=null;allBooks=[];myBorrows=[];isAdmin=false}
+
+  function xlErr(m){
+    if(m.includes('Load failed')||m.includes('Failed to fetch')||m.includes('NetworkError')||m.includes('fetch'))
+      return '🌐 Gabim rrjeti — faqja duhet të jetë deployed te Vercel. Brenda Claude preview kjo lidhje bllokohet. Shkarko HTML-in dhe ngarko te vercel.com/new.'
+    if(m.includes('Invalid login credentials'))return 'Email ose fjalëkalim i gabuar.'
+    if(m.includes('Email not confirmed'))return 'Konfirmo emailin tënd fillimisht.'
+    if(m.includes('User already registered'))return 'Ky email është tashmë i regjistruar.'
+    if(m.includes('Password should be'))return 'Fjalëkalimi duhet të jetë min. 6 karaktere.'
+    if(m.includes('rate limit'))return 'Shumë përpjekje. Prit pak dhe provo sërish.'
+    if(m.includes('JWT')||m.includes('token'))return 'Sesioni ka skaduar. Hyr sërish.'
+    return m
+  }
+
+  /* DASH TABS */
+  function switchDash(tab){
+    ;['books','borrowings','profile','admin'].forEach(t=>{
+      document.getElementById(`panel-${t}`)?.classList.remove('on')
+      document.getElementById(`dt-${t}`)?.classList.remove('on')
+      document.getElementById(`mn-${t}`)?.classList.remove('on')
+    })
+    document.getElementById(`panel-${tab}`)?.classList.add('on')
+    document.getElementById(`dt-${tab}`)?.classList.add('on')
+    document.getElementById(`mn-${tab}`)?.classList.add('on')
+    if(tab==='borrowings')renderBorrowPanel()
+    if(tab==='profile')renderProfilePanel()
+    if(tab==='admin'){switchAdminTab('aoverview')}
+  }
+
+  /* BOOKS */
+  async function loadBooks(){
+    try{const{data,error}=await db.from('books').select('id,title,author,genre,available_copies,total_copies').order('title');if(error)throw error;allBooks=data||[];renderBooks(allBooks)}
+    catch(e){document.getElementById('books-grid').innerHTML=`<p style="color:var(--err);padding:20px">Gabim: ${esc(e.message)}</p>`}
+  }
+  function filterBooks(){const q=document.getElementById('bsearch').value.toLowerCase().trim();renderBooks(q?allBooks.filter(b=>b.title.toLowerCase().includes(q)||b.author.toLowerCase().includes(q)||b.genre.toLowerCase().includes(q)):allBooks)}
+  function renderBooks(list){
+    const g=document.getElementById('books-grid')
+    if(!list.length){g.innerHTML=`<div class="empty-state"style="grid-column:1/-1"><span class="ei">🔍</span><p>Nuk u gjet asnjë libër.</p></div>`;return}
+    const active=new Set(myBorrows.filter(b=>b.status==='active').map(b=>b.book_id))
+    g.innerHTML=list.map(book=>{
+      const c=spine(book.id),mine=active.has(book.id),none=book.available_copies<=0
+      const btn=mine?`<button class="btn-ghost btn-sm"disabled style="width:100%;opacity:.55">✓ Ke Huazuar</button>`:none?`<button class="btn-ghost btn-sm"disabled style="width:100%;opacity:.45">Jo Disponueshëm</button>`:`<button class="btn-primary btn-sm"style="width:100%"onclick="handleBorrow('${book.id}',this)">Huazo</button>`
+      return`<div class="book-card"><div class="bcover"style="background:linear-gradient(135deg,${c}1a 0%,${c}33 100%);border-bottom:2px solid ${c}33"><div class="bspine"style="background:${c}"></div><div class="bcover-title">${esc(book.title)}</div></div><div class="bbody"><div class="btitle">${esc(book.title)}</div><div class="bauthor">${esc(book.author)}</div><div class="brow"><span class="badge">${esc(book.genre)}</span><span class="avail${none?' none':''}">${book.available_copies}/${book.total_copies}</span></div>${btn}</div></div>`
+    }).join('')
+  }
+  function renderPreview(list){
+    const g=document.getElementById('preview-grid');if(!g||!list.length)return
+    g.innerHTML=list.map(b=>{const c=spine(b.id||b.title);return`<div class="book-card"style="cursor:default"><div class="bcover"style="background:linear-gradient(135deg,${c}1a 0%,${c}33 100%);border-bottom:2px solid ${c}33"><div class="bspine"style="background:${c}"></div><div class="bcover-title">${esc(b.title)}</div></div><div class="bbody"><div class="btitle">${esc(b.title)}</div><div class="bauthor">${esc(b.author)}</div><div class="brow"><span class="badge">${esc(b.genre)}</span></div></div></div>`}).join('')
+  }
+
+  /* BORROW / RETURN */
+  async function handleBorrow(bookId,btn){
+    btn.disabled=true;btn.innerHTML='<span class="spinner"></span>'
+    try{const{error}=await db.rpc('borrow_book',{p_book_id:bookId});if(error)throw error;await refreshBorrows();await loadBooks()}
+    catch(e){btn.disabled=false;btn.textContent='Huazo';toast(e.message,'err')}
+  }
+  async function refreshBorrows(){
+    if(!me)return
+    try{const{data}=await db.from('borrowings').select('*,books(id,title,author,genre)').eq('user_id',me.id).order('borrowed_at',{ascending:false});myBorrows=data||[];updateStats()}catch{}
+  }
+  async function renderBorrowPanel(){
+    const w=document.getElementById('blist-wrap');w.innerHTML='<div class="load-box"><div class="spinner spin-g spin-lg"></div></div>'
+    await refreshBorrows()
+    if(!myBorrows.length){w.innerHTML=`<div class="empty-state"><span class="ei">📭</span><p>Nuk ke huazuar asnjë libër ende.<br>Shko te <strong>Librat</strong> dhe fillo leximin!</p></div>`;return}
+    const active=myBorrows.filter(b=>b.status==='active'),ret=myBorrows.filter(b=>b.status==='returned')
+    let html=''
+    if(active.length)html+=`<div class="sec-lbl sl-g">Aktive — ${active.length}</div><div class="blist"style="margin-bottom:24px">${active.map(bCard).join('')}</div>`
+    if(ret.length)html+=`<div class="sec-lbl sl-d">Historiku — ${ret.length}</div><div class="blist">${ret.map(bCard).join('')}</div>`
+    w.innerHTML=html
+  }
+  function bCard(b){
+    const bk=b.books,c=spine(bk.id),due=new Date(b.due_date),over=b.status==='active'&&due<new Date()
+    const sc=b.status==='returned'?'s-ret':over?'s-ov':'s-act',st=b.status==='returned'?'Kthyer':over?'Vonuar':'Aktive'
+    return`<div class="bcard"><div class="bspine-bar"style="background:${c}"></div><div class="binfo"><div class="btitle2">${esc(bk.title)}</div><div class="bauth2">${esc(bk.author)}</div><div class="bdates">${b.status==='returned'?`Kthyer: ${df(b.returned_at)}`:`Deri: ${df(b.due_date)}`}</div></div><span class="sbadge ${sc}">${st}</span>${b.status==='active'?`<button class="btn-ghost btn-sm"onclick="handleReturn('${b.id}',this)">Kthe</button>`:''}</div>`
+  }
+  async function handleReturn(bId,btn){
+    if(!confirm('A je i sigurt që dëshiron ta kthesh këtë libër?'))return
+    btn.disabled=true;btn.innerHTML='<span class="spinner spin-g"></span>'
+    try{const{error}=await db.rpc('return_book',{p_borrowing_id:bId});if(error)throw error;await loadBooks();await renderBorrowPanel()}
+    catch(e){btn.disabled=false;btn.textContent='Kthe';toast(e.message,'err')}
+  }
+
+  /* PROFILE */
+  async function renderProfilePanel(){
+    if(!me)return;['perr','pok'].forEach(x=>document.getElementById(x).classList.add('hidden'))
+    try{const{data}=await db.from('profiles').select('full_name,member_since,is_admin').eq('id',me.id).single();const name=data?.full_name||me.user_metadata?.full_name||'';const since=data?.member_since?new Date(data.member_since).toLocaleDateString('sq-AL',{day:'numeric',month:'long',year:'numeric'}):''
+    document.getElementById('p-name').value=name;document.getElementById('p-email').value=me.email||'';document.getElementById('p-since').value=since}catch{}
+    updateStats()
+  }
+  function updateStats(){const a=myBorrows.filter(b=>b.status==='active').length,t=myBorrows.length;const e1=document.getElementById('ps-act'),e2=document.getElementById('ps-tot');if(e1)e1.textContent=a;if(e2)e2.textContent=t}
+  async function handleProfileSave(){
+    const name=document.getElementById('p-name').value.trim(),btn=document.getElementById('psave'),eEl=document.getElementById('perr'),oEl=document.getElementById('pok')
+    eEl.classList.add('hidden');oEl.classList.add('hidden')
+    if(!name){eEl.textContent='Emri nuk mund të jetë bosh.';eEl.classList.remove('hidden');return}
+    btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Duke ruajtur...'
+    try{const{error}=await db.from('profiles').update({full_name:name,updated_at:new Date().toISOString()}).eq('id',me.id);if(error)throw error;await db.auth.updateUser({data:{full_name:name}});setUserDisplay(name,me.email);oEl.textContent='✅ Profili u ruajt!';oEl.classList.remove('hidden');setTimeout(()=>oEl.classList.add('hidden'),3000)}
+    catch(e){eEl.textContent=`Gabim: ${e.message}`;eEl.classList.remove('hidden')}
+    finally{btn.disabled=false;btn.textContent='Ruaj Ndryshimet'}
+  }
+
+  /* USER DISPLAY */
+  function setUserDisplay(name,email){
+    const init=name?name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2):(email||'?')[0].toUpperCase()
+    ;['uavatar','pav-lg'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=init})
+    const un=document.getElementById('uname');if(un)un.textContent=name||email
+  }
+
+  /* ADMIN: CHECK */
+  async function checkAdmin(){
+    if(!me){isAdmin=false;applyAdminUI();return}
+    try{const{data}=await db.from('profiles').select('is_admin').eq('id',me.id).single();isAdmin=data?.is_admin||false}
+    catch{isAdmin=false}
+    applyAdminUI()
+  }
+  function applyAdminUI(){document.querySelectorAll('.admin-only').forEach(el=>el.classList.toggle('hidden',!isAdmin))}
+
+  /* ADMIN: TAB SWITCH */
+  function switchAdminTab(tab){
+    ;['aoverview','abooks','ausers','aborrows'].forEach(t=>{document.getElementById(`atp-${t}`)?.classList.remove('on');document.getElementById(`apanel-${t}`)?.classList.add('hidden')})
+    document.getElementById(`atp-${tab}`)?.classList.add('on')
+    document.getElementById(`apanel-${tab}`)?.classList.remove('hidden')
+    if(tab==='aoverview')loadAdminStats()
+    if(tab==='abooks')loadAdminBooksTable()
+    if(tab==='ausers')loadAdminUsers()
+    if(tab==='aborrows')loadAdminBorrows()
+  }
+
+  /* ADMIN: STATS */
+  async function loadAdminStats(){
+    try{const{data,error}=await db.rpc('admin_get_stats');if(error)throw error
+    const s=typeof data==='string'?JSON.parse(data):data;if(s?.error)throw new Error(s.error)
+    ;['books','avail','users','active','overdue','total'].forEach((k,i)=>{const val=[s.total_books,s.available_books,s.total_users,s.active_borrowings,s.overdue_borrowings,s.total_borrowings][i];const el=document.getElementById(`as-${k}`);if(el)el.textContent=val??'—'})}
+    catch(e){document.getElementById('admin-stats-wrap').innerHTML=`<div class="alert-err">Gabim: ${esc(e.message)}.<br>Sigurohu që ke ekzekutuar SQL-in e admin panel-it në Supabase Dashboard.</div>`}
+  }
+
+  /* ADMIN: BOOKS TABLE */
+  async function loadAdminBooksTable(){
+    const w=document.getElementById('admin-books-wrap');w.innerHTML='<div class="load-box"><div class="spinner spin-g spin-lg"></div></div>'
+    try{const{data,error}=await db.from('books').select('*').order('title');if(error)throw error;adminBooks=data||[];adminBooks.forEach(b=>adminBooksMap[b.id]=b);renderAdminBooksTable(adminBooks)}
+    catch(e){w.innerHTML=`<p style="color:var(--err);padding:20px">Gabim: ${esc(e.message)}</p>`}
+  }
+  function filterAdminBooks(){const q=document.getElementById('ab-search').value.toLowerCase().trim();renderAdminBooksTable(q?adminBooks.filter(b=>b.title.toLowerCase().includes(q)||b.author.toLowerCase().includes(q)):adminBooks)}
+  function renderAdminBooksTable(list){
+    const w=document.getElementById('admin-books-wrap')
+    if(!list.length){w.innerHTML=`<div class="empty-state"><span class="ei">📚</span><p>Nuk ka libra.</p></div>`;return}
+    w.innerHTML=`<div class="atable-wrap"><table class="atable"><thead><tr><th>Libri</th><th>Autori</th><th>Zhanri</th><th style="text-align:center">Kopje</th><th style="text-align:center">Disponueshme</th><th>Veprime</th></tr></thead><tbody>${list.map(b=>`<tr><td><div class="atitle">${esc(b.title)}</div>${b.published_year?`<div class="asub">${b.published_year}</div>`:''}</td><td>${esc(b.author)}</td><td><span class="badge">${esc(b.genre)}</span></td><td style="text-align:center">${b.total_copies}</td><td style="text-align:center"><span class="${b.available_copies>0?'at-ok':'at-err'}">${b.available_copies}</span></td><td><div class="act-btns"><button class="btn-ghost btn-sm"onclick="openBookModal('${b.id}')">✏️ Ndrysho</button><button class="btn-del"onclick="handleDeleteBook('${b.id}','${esc(b.title)}')">🗑️</button></div></td></tr>`).join('')}</tbody></table></div>`
+  }
+
+  /* ADMIN: USERS */
+  async function loadAdminUsers(){
+    const w=document.getElementById('admin-users-wrap');w.innerHTML='<div class="load-box"><div class="spinner spin-g spin-lg"></div></div>'
+    try{const{data,error}=await db.rpc('admin_get_users');if(error)throw error
+    const users=data||[];document.getElementById('users-count').textContent=`${users.length} anëtarë gjithsej`
+    if(!users.length){w.innerHTML=`<div class="empty-state"><span class="ei">👥</span><p>Nuk ka anëtarë ende.</p></div>`;return}
+    w.innerHTML=`<div class="atable-wrap"><table class="atable"><thead><tr><th>Anëtari</th><th>Email</th><th>Roli</th><th style="text-align:center">Gjithsej Huazime</th><th style="text-align:center">Aktive</th><th>Veprime</th></tr></thead><tbody>${users.map(u=>`<tr><td><div class="atitle">${esc(u.full_name||'(pa emër)')}</div></td><td><div class="asub">${esc(u.email)}</div></td><td>${u.is_admin?'<span class="role-admin">⚙️ Admin</span>':'<span class="role-user">User</span>'}</td><td style="text-align:center">${u.borrow_count}</td><td style="text-align:center">${u.active_borrows>0?`<span class="at-ok">${u.active_borrows}</span>`:u.active_borrows}</td><td><button class="btn-ghost btn-sm"onclick="handleToggleAdmin('${u.id}',${u.is_admin},'${esc(u.full_name||'user')}')">${u.is_admin?'⬇️ Hiq Admin':'⬆️ Bëj Admin'}</button></td></tr>`).join('')}</tbody></table></div>`}
+    catch(e){w.innerHTML=`<div class="alert-err"style="margin:20px">Gabim: ${esc(e.message)}</div>`}
+  }
+
+  /* ADMIN: ALL BORROWINGS */
+  async function loadAdminBorrows(){
+    const w=document.getElementById('admin-borrows-wrap');w.innerHTML='<div class="load-box"><div class="spinner spin-g spin-lg"></div></div>'
+    try{const{data,error}=await db.rpc('admin_get_borrowings');if(error)throw error;allAdminBorrows=data||[];renderAdminBorrowsTable(allAdminBorrows)}
+    catch(e){w.innerHTML=`<div class="alert-err"style="margin:20px">Gabim: ${esc(e.message)}</div>`}
+  }
+  function filterAdminBorrows(filter){
+    ;['all','active','overdue','returned'].forEach(f=>document.getElementById(`fbtn-${f}`)?.classList.remove('on'))
+    document.getElementById(`fbtn-${filter}`)?.classList.add('on')
+    const now=new Date()
+    const filtered=filter==='all'?allAdminBorrows:filter==='overdue'?allAdminBorrows.filter(b=>b.status==='active'&&new Date(b.due_date)<now):allAdminBorrows.filter(b=>b.status===filter)
+    renderAdminBorrowsTable(filtered)
+  }
+  function renderAdminBorrowsTable(list){
+    const w=document.getElementById('admin-borrows-wrap')
+    if(!list.length){w.innerHTML=`<div class="empty-state"><span class="ei">🔖</span><p>Nuk ka huazime për këtë filtër.</p></div>`;return}
+    w.innerHTML=`<div class="atable-wrap"><table class="atable"><thead><tr><th>Libri</th><th>Anëtari</th><th>Huazuar</th><th>Ktheje Deri</th><th>Statusi</th><th>Veprimi</th></tr></thead><tbody>${list.map(b=>{const due=new Date(b.due_date),over=b.status==='active'&&due<new Date(),sc=b.status==='returned'?'s-ret':over?'s-ov':'s-act',st=b.status==='returned'?'Kthyer':over?'⚠️ Vonuar':'Aktive';return`<tr><td><div class="atitle">${esc(b.book_title)}</div><div class="asub">${esc(b.book_author)}</div></td><td><div class="atitle">${esc(b.user_name||'?')}</div><div class="asub">${esc(b.user_email)}</div></td><td><div class="asub">${df(b.borrowed_at)}</div></td><td><div class="asub${over?' ov':''}">${df(b.due_date)}</div></td><td><span class="sbadge ${sc}">${st}</span></td><td>${b.status==='active'?`<button class="btn-ghost btn-sm"onclick="handleAdminReturn('${b.id}')">Kthe</button>`:'—'}</td></tr>`}).join('')}</tbody></table></div>`
+  }
+
+  /* ADMIN ACTIONS */
+  function openBookModal(id=null){
+    editingBookId=id
+    const book=id?adminBooksMap[id]:null
+    document.getElementById('bm-heading').textContent=book?'✏️ Ndrysho Librin':'📚 Shto Libër të Ri'
+    document.getElementById('bm-sub').textContent=book?`Duke ndryshuar: ${book.title}`:'Plotëso të dhënat e librit të ri'
+    document.getElementById('bm-title').value=book?.title||''
+    document.getElementById('bm-author').value=book?.author||''
+    document.getElementById('bm-genre').value=book?.genre||''
+    document.getElementById('bm-year').value=book?.published_year||''
+    document.getElementById('bm-copies').value=book?.total_copies||1
+    document.getElementById('bm-desc').value=book?.description||''
+    document.getElementById('bmerr').classList.add('hidden')
+    document.getElementById('book-modal').classList.remove('hidden')
+  }
+  function closeBookModal(){document.getElementById('book-modal').classList.add('hidden');editingBookId=null}
+
+  async function handleBookSave(){
+    const title=document.getElementById('bm-title').value.trim(),author=document.getElementById('bm-author').value.trim(),genre=document.getElementById('bm-genre').value.trim(),year=parseInt(document.getElementById('bm-year').value)||null,copies=parseInt(document.getElementById('bm-copies').value)||1,desc=document.getElementById('bm-desc').value.trim()
+    const eEl=document.getElementById('bmerr')
+    if(!title||!author||!genre){eEl.textContent='Titulli, autori dhe zhanri janë të detyrueshëm.';eEl.classList.remove('hidden');return}
+    const btn=document.getElementById('bm-save');btn.disabled=true;btn.innerHTML='<span class="spinner"></span>'
+    try{
+      if(editingBookId){const{error}=await db.rpc('admin_update_book',{p_id:editingBookId,p_title:title,p_author:author,p_genre:genre,p_description:desc,p_total_copies:copies,p_year:year});if(error)throw error}
+      else{const{error}=await db.rpc('admin_add_book',{p_title:title,p_author:author,p_genre:genre,p_description:desc,p_copies:copies,p_year:year});if(error)throw error}
+      closeBookModal();await loadAdminBooksTable();await loadBooks();toast(editingBookId?'Libri u ndryshua!':'Libri u shtua!','ok')
+    }catch(e){eEl.textContent=e.message;eEl.classList.remove('hidden')}
+    finally{btn.disabled=false;btn.textContent='Ruaj Librin'}
+  }
+
+  async function handleDeleteBook(id,title){
+    if(!confirm(`A je i sigurt që dëshiron ta fshish "${title}"?\nKjo nuk mund të anulohet.`))return
+    try{const{error}=await db.rpc('admin_delete_book',{p_id:id});if(error)throw error;await loadAdminBooksTable();await loadBooks();toast('Libri u fshi.','ok')}
+    catch(e){toast(e.message,'err')}
+  }
+
+  async function handleToggleAdmin(uid,currently,name){
+    const action=currently?'heqësh statusin admin':'bësh admin'
+    if(!confirm(`A je i sigurt që dëshiron t'i ${action} "${name}"?`))return
+    try{const{error}=await db.rpc('admin_set_role',{p_user_id:uid,p_is_admin:!currently});if(error)throw error;await loadAdminUsers();toast(`Roli i ${name} u ndryshua.`,'ok')}
+    catch(e){toast(e.message,'err')}
+  }
+
+  async function handleAdminReturn(bId){
+    if(!confirm('A dëshiron ta kthesh këtë libër si admin?'))return
+    try{const{error}=await db.rpc('admin_return_book',{p_borrowing_id:bId});if(error)throw error;await loadAdminBorrows();await loadBooks();toast('Libri u kthye.','ok')}
+    catch(e){toast(e.message,'err')}
+  }
+
+  /* TOAST */
+  function toast(msg,type){
+    const t=document.createElement('div');t.textContent=msg
+    Object.assign(t.style,{position:'fixed',bottom:'80px',left:'50%',transform:'translateX(-50%)',padding:'10px 18px',borderRadius:'8px',fontSize:'13px',fontFamily:"'DM Sans',sans-serif",background:type==='err'?'#b94545':'#3a8a58',color:'#fff',zIndex:'9999',boxShadow:'0 6px 24px rgba(0,0,0,.5)',animation:'fadeUp .2s ease',maxWidth:'calc(100vw - 32px)',textAlign:'center'})
+    document.body.appendChild(t);setTimeout(()=>t.remove(),3500)
+  }
+
+  /* KEYBOARD */
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){closeAuth();closeBookModal()}
+    if(e.key==='Enter'){const m=document.getElementById('auth-modal');if(!m.classList.contains('hidden'))document.getElementById('form-in').classList.contains('hidden')?handleSignUp():handleSignIn()}
+  })
+
+  /* INIT */
+  async function init(){
+    if(!window.supabase){
+      document.getElementById('net-banner').classList.remove('hidden')
+      document.getElementById('net-banner').innerHTML='⚠️ <strong>Supabase SDK nuk u ngarkua.</strong> Kjo ndodh kur faqja hapet si file:// ose brenda Claude preview. Deploy-o te <strong>vercel.com/new</strong> dhe do funksionojë. &nbsp;<button onclick="this.parentElement.classList.add(\'hidden\')" style="background:rgba(255,255,255,.25);border:none;color:#fff;padding:3px 10px;border-radius:4px;cursor:pointer;font-size:12px">✕</button>'
+      return
+    }
+    db=window.supabase.createClient(SUPA_URL,SUPA_KEY,{auth:{flowType:'pkce'}})
+    renderPreview(PREVIEW)
+    // Test connectivity quietly
+    fetch(`${SUPA_URL}/auth/v1/health`,{method:'GET',headers:{apikey:SUPA_KEY}})
+      .then(r=>{ if(!r.ok) throw new Error('not ok') })
+      .catch(()=>document.getElementById('net-banner').classList.remove('hidden'))
+    db.from('books').select('id,title,author,genre').order('title').limit(4).then(({data})=>{if(data?.length)renderPreview(data)}).catch(()=>{})
+    db.auth.onAuthStateChange(async(event,session)=>{
+      me=session?.user||null
+      if(me){
+        setUserDisplay(me.user_metadata?.full_name||'',me.email)
+        showView('dashboard')
+        await checkAdmin()
+        await Promise.all([loadBooks(),refreshBorrows()])
+      }else{
+        isAdmin=false;applyAdminUI();showView('landing');renderPreview(PREVIEW)
+      }
+    })
+  }
+  window.addEventListener('load',init)
+</script>
+</body>
+</html>
